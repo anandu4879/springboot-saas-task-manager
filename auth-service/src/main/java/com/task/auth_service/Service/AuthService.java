@@ -5,8 +5,6 @@ import com.task.auth_service.Repository.UserRepository;
 import com.task.auth_service.config.JwtUtil;
 import com.task.auth_service.entity.Organization;
 import com.task.auth_service.entity.User;
-import com.task.auth_service.Repository.OrganizationRepository;
-import com.task.auth_service.Repository.UserRepository;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +22,16 @@ public class AuthService {
     }
 
     public User registerUser(String username, String password, String orgName) {
+        if (orgName == null || orgName.trim().isEmpty()) {
+            throw new IllegalArgumentException("Organization name cannot be null or empty");
+        }
+        if (username == null || username.trim().isEmpty()) {
+            throw new IllegalArgumentException("Username cannot be null or empty");
+        }
+        if (password == null || password.trim().isEmpty()) {
+            throw new IllegalArgumentException("Password cannot be null or empty");
+        }
+
         Organization org = new Organization();
         org.setName(orgName);
         Organization savedOrg = orgRepo.save(org);
@@ -37,10 +45,16 @@ public class AuthService {
     }
 
     public String login(String username, String password) {
-        User user = userRepo.findByUsername(username).orElseThrow();
+        System.out.println("Attempting login for username: " + username);
+        User user = userRepo.findByUsername(username).orElseThrow(() -> {
+            System.out.println("User not found: " + username);
+            return new RuntimeException("Invalid credentials");
+        });
         if (passwordEncoder.matches(password, user.getPassword())) {
+            System.out.println("Password match for username: " + username);
             return jwtUtil.generateToken(user.getUsername(), user.getRole());
         }
+        System.out.println("Password mismatch for username: " + username);
         throw new RuntimeException("Invalid credentials");
     }
 }

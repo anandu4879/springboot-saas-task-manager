@@ -1,5 +1,6 @@
 package com.task.auth_service.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
@@ -21,6 +22,7 @@ import java.util.List;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public JwtAuthenticationFilter(JwtUtil jwtUtil) {
         this.jwtUtil = jwtUtil;
@@ -32,9 +34,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
 
         String path = request.getServletPath();
-
-        // Skip signup/login
+        System.out.println("Request Path: " + path); // Add debug log
+        // Skip authentication for /auth/** endpoints
         if (path.startsWith("/auth/")) {
+            System.out.println("Skipping authentication for path: " + path); // Add debug log
             filterChain.doFilter(request, response);
             return;
         }
@@ -44,7 +47,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             SecurityContextHolder.clearContext();
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("{\"error\": \"Unauthorized: Missing or invalid token\"}");
+            response.setContentType("application/json");
+            response.getWriter().write(objectMapper.writeValueAsString(
+                    new ErrorResponse("Unauthorized", "Missing or invalid token")));
             return;
         }
 
@@ -68,10 +73,31 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         } catch (JwtException e) {
             SecurityContextHolder.clearContext();
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("{\"error\": \"Unauthorized: Invalid token\"}");
+            response.setContentType("application/json");
+            response.getWriter().write(objectMapper.writeValueAsString(
+                    new ErrorResponse("Unauthorized", "Invalid token")));
             return;
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    // Inner class for standardized error response
+    private static class ErrorResponse {
+        private final String error;
+        private final String message;
+
+        public ErrorResponse(String error, String message) {
+            this.error = error;
+            this.message = message;
+        }
+
+        public String getError() {
+            return error;
+        }
+
+        public String getMessage() {
+            return message;
+        }
     }
 }
