@@ -1,22 +1,19 @@
 package com.task.auth_service.Controllers;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.validation.constraints.NotBlank;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.task.auth_service.Service.AuthService;
 import com.task.auth_service.entity.User;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import lombok.Data;
-import org.springframework.web.bind.annotation.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.ControllerAdvice;
-import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
+
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
@@ -25,42 +22,86 @@ public class AuthController {
     public AuthController(AuthService authService) {
         this.authService = authService;
     }
+
     @PostMapping("/signup")
     public User signup(@Valid @RequestBody SignupRequest request) {
-        return authService.registerUser(request.username, request.password, request.organization);
+        return authService.registerUser(request.getUsername(), request.getPassword(), request.getOrganization());
     }
 
     @PostMapping("/login")
     public String login(@Valid @RequestBody LoginRequest request) {
         System.out.println("Received LoginRequest: username=" + request.getUsername() + ", password=" + request.getPassword());
-        return authService.login(request.username, request.password);
+        return authService.login(request.getUsername(), request.getPassword());
     }
 
-    @Data
     static class SignupRequest {
         @NotBlank(message = "Username is required")
         @JsonProperty("username")
-        String username;
+        private String username;
 
         @NotBlank(message = "Password is required")
         @JsonProperty("password")
-        String password;
+        private String password;
 
         @NotBlank(message = "Organization name is required")
         @JsonProperty("organization")
-        String organization;
+        private String organization;
+
+        // Getters
+        public String getUsername() {
+            return username;
+        }
+
+        public String getPassword() {
+            return password;
+        }
+
+        public String getOrganization() {
+            return organization;
+        }
+
+        // Setters (optional, included for completeness)
+        public void setUsername(String username) {
+            this.username = username;
+        }
+
+        public void setPassword(String password) {
+            this.password = password;
+        }
+
+        public void setOrganization(String organization) {
+            this.organization = organization;
+        }
     }
-    @Data
+
     static class LoginRequest {
         @NotBlank(message = "Username is required")
-        String username;
+        private String username;
+
         @NotBlank(message = "Password is required")
-        String password;
+        private String password;
+
+        // Getters
+        public String getUsername() {
+            return username;
+        }
+
+        public String getPassword() {
+            return password;
+        }
+
+        // Setters (optional, included for completeness)
+        public void setUsername(String username) {
+            this.username = username;
+        }
+
+        public void setPassword(String password) {
+            this.password = password;
+        }
     }
 
     @ControllerAdvice
     public class GlobalExceptionHandler {
-
         @ExceptionHandler(MethodArgumentNotValidException.class)
         public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
             Map<String, String> errors = new HashMap<>();
